@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.2
+Date: 07.23.2024
+  Changes:
+    - Add support for K2 Inserters
+    - Add missing locale for the supported double inserters
+    - Code cleanup to make things more uniform
+---------------------------------------------------------------------------------------------------
 Version: 1.0.1
 Date: 07.23.2024
   Features:
