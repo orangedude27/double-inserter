@@ -1,10 +1,11 @@
 {
     "name": "double-inserter",
     "version": "1.0.1",
-    "title": "Double Inserter",
+    "title": "Orangedude27's Double Inserter",
     "author": "Orangedude27",
     "factorio_version": "1.1",
     "description": "Don't you hate it when you run out of space for inserters when trying to be compact. Boy do i have the solution for you!",
-    "dependencies": ["flib >= 0.6.0"],
-    "homepage": "https://github.com/orangedude27/double-inserter"
+    "dependencies": ["flib >= 0.6.0",
+                     "? Krastorio2"],
+    "homepage": "https://discord.gg/CPpSVU5cmk"
 }

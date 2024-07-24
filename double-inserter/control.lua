@@ -12,13 +12,13 @@ local function oposite_direction(direction)
     end
 end
 
-local function on_bi_dir_inserter_built(event)
+local function on_double_inserter_built(event)
 
     local entity = nil
 
-    if event.entity and string.find(event.entity.name, "bi_dir_") then
+    if event.entity and string.find(event.entity.name, "double_") then
         entity = event.entity
-    elseif event.created_entity and string.find(event.created_entity.name, "bi_dir_") then
+    elseif event.created_entity and string.find(event.created_entity.name, "double_") then
         entity = event.created_entity
     end
 
@@ -31,53 +31,53 @@ local function on_bi_dir_inserter_built(event)
             log("Duplicate Inserter exists")
         else
             inserter_name = string.sub(entity.name, 8, -1)
-            -- Create bi_dir_arm entity on top of bi_dir_inserter
-            local bi_dir_arm_entity = surface.create_entity({
-                name = "bi_dir_arm_" .. inserter_name,
+            -- Create double_arm entity on top of double_inserter
+            local double_arm_entity = surface.create_entity({
+                name = "double_arm_" .. inserter_name,
                 position = position,
                 direction = oposite_direction(direction),
                 force = entity.force,
             })
 
-            bi_dir_arm_entity.operable = true
-            bi_dir_arm_entity.minable = true
-            bi_dir_arm_entity.destructible = false
+            double_arm_entity.operable = true
+            double_arm_entity.minable = true
+            double_arm_entity.destructible = false
 
             global.BiDirInserter[entity.unit_number] = {
                 parent_inserter = entity,
-                child_arm = bi_dir_arm_entity,
+                child_arm = double_arm_entity,
             }
 
-            global.BiDirInserter[bi_dir_arm_entity.unit_number] = {
+            global.BiDirInserter[double_arm_entity.unit_number] = {
                 parent_inserter = entity,
-                child_arm = bi_dir_arm_entity,
+                child_arm = double_arm_entity,
             }
         end
     end
 end
 
-local function on_bi_dir_inserter_mined(event, create_ghosts)
-    if event.entity and string.find(event.entity.name, "bi_dir_") then
+local function on_double_inserter_mined(event, create_ghosts)
+    if event.entity and string.find(event.entity.name, "double_") then
         local entity = event.entity
-        local bi_dir_inserter_pair = global.BiDirInserter[entity.unit_number]
+        local double_inserter_pair = global.BiDirInserter[entity.unit_number]
         
-        if bi_dir_inserter_pair then
+        if double_inserter_pair then
             if string.find(event.entity.name, "arm") then
-                if bi_dir_inserter_pair.parent_inserter and bi_dir_inserter_pair.parent_inserter.valid then
+                if double_inserter_pair.parent_inserter and double_inserter_pair.parent_inserter.valid then
                     if create_ghosts then
-                        bi_dir_inserter_pair.parent_inserter.destructible = true
-                        bi_dir_inserter_pair.parent_inserter.die()
+                        double_inserter_pair.parent_inserter.destructible = true
+                        double_inserter_pair.parent_inserter.die()
                     else
-                        bi_dir_inserter_pair.parent_inserter.destroy()
+                        double_inserter_pair.parent_inserter.destroy()
                     end
                 end
             else
-                if bi_dir_inserter_pair.child_arm and bi_dir_inserter_pair.child_arm.valid then
+                if double_inserter_pair.child_arm and double_inserter_pair.child_arm.valid then
                     if create_ghosts then
-                        bi_dir_inserter_pair.child_arm.destructible = true
-                        bi_dir_inserter_pair.child_arm.die()
+                        double_inserter_pair.child_arm.destructible = true
+                        double_inserter_pair.child_arm.die()
                     else
-                        bi_dir_inserter_pair.child_arm.destroy()
+                        double_inserter_pair.child_arm.destroy()
                     end
                 end
             end
@@ -85,31 +85,31 @@ local function on_bi_dir_inserter_mined(event, create_ghosts)
     end
 end
 
-local function on_bi_dir_inserter_rotated(event)
-    if event.entity and string.find(event.entity.name, "bi_dir_") then
+local function on_double_inserter_rotated(event)
+    if event.entity and string.find(event.entity.name, "double_") then
         local entity = event.entity
-        local bi_dir_inserter_pair = global.BiDirInserter[entity.unit_number]
+        local double_inserter_pair = global.BiDirInserter[entity.unit_number]
 
-        if bi_dir_inserter_pair then
+        if double_inserter_pair then
             if string.find(event.entity.name, "arm") then
                 if entity.direction == defines.direction.north then
-                    bi_dir_inserter_pair.parent_inserter.direction = defines.direction.south
+                    double_inserter_pair.parent_inserter.direction = defines.direction.south
                 elseif entity.direction == defines.direction.east then
-                    bi_dir_inserter_pair.parent_inserter.direction = defines.direction.west
+                    double_inserter_pair.parent_inserter.direction = defines.direction.west
                 elseif entity.direction == defines.direction.south then
-                    bi_dir_inserter_pair.parent_inserter.direction = defines.direction.north
+                    double_inserter_pair.parent_inserter.direction = defines.direction.north
                 elseif entity.direction == defines.direction.west then
-                    bi_dir_inserter_pair.parent_inserter.direction = defines.direction.east
+                    double_inserter_pair.parent_inserter.direction = defines.direction.east
                 end
             else
                 if entity.direction == defines.direction.north then
-                    bi_dir_inserter_pair.child_arm.direction = defines.direction.south
+                    double_inserter_pair.child_arm.direction = defines.direction.south
                 elseif entity.direction == defines.direction.east then
-                    bi_dir_inserter_pair.child_arm.direction = defines.direction.west
+                    double_inserter_pair.child_arm.direction = defines.direction.west
                 elseif entity.direction == defines.direction.south then
-                    bi_dir_inserter_pair.child_arm.direction = defines.direction.north
+                    double_inserter_pair.child_arm.direction = defines.direction.north
                 elseif entity.direction == defines.direction.west then
-                    bi_dir_inserter_pair.child_arm.direction = defines.direction.east
+                    double_inserter_pair.child_arm.direction = defines.direction.east
                 end
             end
         end
@@ -121,13 +121,13 @@ local filters_on_mined = {{ filter="type", type="inserter" }}
 local filters_on_pipette = {{ filter="type", type="inserter" }}
 
 -- always track built/removed train stops for duplicate name list
-script.on_event(defines.events.on_built_entity, on_bi_dir_inserter_built, filters_on_built)
-script.on_event(defines.events.on_robot_built_entity, on_bi_dir_inserter_built, filters_on_built )
-script.on_event({defines.events.script_raised_built, defines.events.script_raised_revive, defines.events.on_entity_cloned}, on_bi_dir_inserter_built)
+script.on_event(defines.events.on_built_entity, on_double_inserter_built, filters_on_built)
+script.on_event(defines.events.on_robot_built_entity, on_double_inserter_built, filters_on_built )
+script.on_event({defines.events.script_raised_built, defines.events.script_raised_revive, defines.events.on_entity_cloned}, on_double_inserter_built)
 
-script.on_event(defines.events.on_pre_player_mined_item, on_bi_dir_inserter_mined, filters_on_mined )
-script.on_event(defines.events.on_robot_pre_mined, on_bi_dir_inserter_mined, filters_on_mined )
-script.on_event(defines.events.on_entity_died, function(event) on_bi_dir_inserter_mined(event, true) end, filters_on_mined )
-script.on_event(defines.events.script_raised_destroy, on_bi_dir_inserter_mined)
+script.on_event(defines.events.on_pre_player_mined_item, on_double_inserter_mined, filters_on_mined )
+script.on_event(defines.events.on_robot_pre_mined, on_double_inserter_mined, filters_on_mined )
+script.on_event(defines.events.on_entity_died, function(event) on_double_inserter_mined(event, true) end, filters_on_mined )
+script.on_event(defines.events.script_raised_destroy, on_double_inserter_mined)
 
-script.on_event(defines.events.on_player_rotated_entity, on_bi_dir_inserter_rotated)
+script.on_event(defines.events.on_player_rotated_entity, on_double_inserter_rotated)
