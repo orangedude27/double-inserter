@@ -1,0 +1,16 @@
+{
+    "factorio.versions": [
+        {
+            "name": "1.1.107",
+            "factorioPath": "c:\\Users\\Orangedude27\\Desktop\\Factorio Dev\\bin\\x64\\factorio.exe",
+            "active": true
+        }
+    ],
+    "Lua.workspace.library": [
+        "c:\\Users\\Orangedude27\\Desktop\\Factorio Dev\\data"
+    ],
+    "Lua.workspace.userThirdParty": [
+        "c:\\Users\\Orangedude27\\AppData\\Roaming\\VSCodium\\User\\workspaceStorage\\6349f259fa85cab4317385ef32bfba40\\justarandomgeek.factoriomod-debug\\sumneko-3rd"
+    ],
+    "Lua.workspace.checkThirdParty": "ApplyInMemory"
+}
