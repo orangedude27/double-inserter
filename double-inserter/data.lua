@@ -18,7 +18,7 @@ for inserter_name, entity_prototype in pairs(existing_inserters) do
       double_inserter_entity.selection_box = {{-0.5, 0}, {0.5, 0.5}}
 
       local double_arm_entity = flib.copy_prototype(entity_prototype, "double_arm_" .. inserter_name)
-      double_arm_entity.icon = "__all-the-overhaul-modpack__/graphics/icons/empty.png"
+      double_arm_entity.icon = "__double-inserter__/graphics/icons/empty.png"
       double_arm_entity.rotation_speed = double_arm_entity.rotation_speed * 0.50
       double_arm_entity.icon_size = 32
       double_arm_entity.icon_mipmaps = nil
@@ -30,7 +30,7 @@ for inserter_name, entity_prototype in pairs(existing_inserters) do
 
       double_arm_entity.hand_base_shadow =
       {
-        filename = "__all-the-overhaul-modpack__/graphics/icons/empty.png",
+        filename = "__double-inserter__/graphics/icons/empty.png",
         priority = "extra-high",
         width = 1,
         height = 1,
@@ -39,7 +39,7 @@ for inserter_name, entity_prototype in pairs(existing_inserters) do
       }
       double_arm_entity.hand_closed_shadow =
       {
-        filename = "__all-the-overhaul-modpack__/graphics/icons/empty.png",
+        filename = "__double-inserter__/graphics/icons/empty.png",
         priority = "extra-high",
         width = 1,
         height = 1,
@@ -48,7 +48,7 @@ for inserter_name, entity_prototype in pairs(existing_inserters) do
       }
       double_arm_entity.hand_open_shadow =
       {
-        filename = "__all-the-overhaul-modpack__/graphics/icons/empty.png",
+        filename = "__double-inserter__/graphics/icons/empty.png",
         priority = "extra-high",
         width = 1,
         height = 1,
@@ -59,7 +59,7 @@ for inserter_name, entity_prototype in pairs(existing_inserters) do
       {
         sheet =
         {
-          filename = "__all-the-overhaul-modpack__/graphics/icons/empty.png",
+          filename = "__double-inserter__/graphics/icons/empty.png",
           priority = "extra-high",
           width = 1,
           height = 1,
