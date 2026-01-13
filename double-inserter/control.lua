@@ -13,7 +13,7 @@ local function oposite_direction(direction)
 end
 
 local function on_double_inserter_built(event)
-qeqe    local entity = nil
+local entity = nil
 
     if event.entity and string.find(event.entity.name, "double_") then
         entity = event.entity
