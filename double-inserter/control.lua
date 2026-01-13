@@ -13,8 +13,7 @@ local function oposite_direction(direction)
 end
 
 local function on_double_inserter_built(event)
-
-    local entity = nil
+qeqe    local entity = nil
 
     if event.entity and string.find(event.entity.name, "double_") then
         entity = event.entity
@@ -27,7 +26,7 @@ local function on_double_inserter_built(event)
         local position = entity.position
         local direction = entity.direction
 
-        if global.BiDirInserter[entity.unit_number] then
+        if storage.BiDirInserter[entity.unit_number] then
             log("Duplicate Inserter exists")
         else
             inserter_name = string.sub(entity.name, 8, -1)
@@ -43,12 +42,12 @@ local function on_double_inserter_built(event)
             double_arm_entity.minable = true
             double_arm_entity.destructible = false
 
-            global.BiDirInserter[entity.unit_number] = {
+            storage.BiDirInserter[entity.unit_number] = {
                 parent_inserter = entity,
                 child_arm = double_arm_entity,
             }
 
-            global.BiDirInserter[double_arm_entity.unit_number] = {
+            storage.BiDirInserter[double_arm_entity.unit_number] = {
                 parent_inserter = entity,
                 child_arm = double_arm_entity,
             }
@@ -59,7 +58,7 @@ end
 local function on_double_inserter_mined(event, create_ghosts)
     if event.entity and string.find(event.entity.name, "double_") then
         local entity = event.entity
-        local double_inserter_pair = global.BiDirInserter[entity.unit_number]
+        local double_inserter_pair = storage.BiDirInserter[entity.unit_number]
         
         if double_inserter_pair then
             if string.find(event.entity.name, "arm") then
@@ -88,7 +87,7 @@ end
 local function on_double_inserter_rotated(event)
     if event.entity and string.find(event.entity.name, "double_") then
         local entity = event.entity
-        local double_inserter_pair = global.BiDirInserter[entity.unit_number]
+        local double_inserter_pair = storage.BiDirInserter[entity.unit_number]
 
         if double_inserter_pair then
             if string.find(event.entity.name, "arm") then
@@ -120,7 +119,6 @@ local filters_on_built = {{ filter="type", type="inserter" }}
 local filters_on_mined = {{ filter="type", type="inserter" }}
 local filters_on_pipette = {{ filter="type", type="inserter" }}
 
--- always track built/removed train stops for duplicate name list
 script.on_event(defines.events.on_built_entity, on_double_inserter_built, filters_on_built)
 script.on_event(defines.events.on_robot_built_entity, on_double_inserter_built, filters_on_built )
 script.on_event({defines.events.script_raised_built, defines.events.script_raised_revive, defines.events.on_entity_cloned}, on_double_inserter_built)

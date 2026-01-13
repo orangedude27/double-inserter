@@ -1,18 +1,38 @@
 flib = require('__flib__.data-util')
 
+new_inserter_subgroup = table.deepcopy(data.raw["item-subgroup"]["inserter"])
+new_inserter_subgroup.name = "inserters_double"
+new_inserter_subgroup.order = new_inserter_subgroup.order .. "b"
+
+data:extend({new_inserter_subgroup})
+
 local existing_inserters = table.deepcopy(data.raw["inserter"])
 for inserter_name, entity_prototype in pairs(existing_inserters) do
   if not string.find(inserter_name, "loader") then
     if entity_prototype.minable and entity_prototype.minable.result then
 
       local double_inserter_item = flib.copy_prototype(data.raw.item[entity_prototype.minable.result], "double_" .. inserter_name)
-      double_inserter_item.order = "a[inserter]a[double_" .. inserter_name .. "]"
+      double_inserter_item.icons = {
+        {
+          icon = double_inserter_item.icon
+        },
+        {
+          icon = "__double-inserter__/graphics/icons/two.png", scale = 0.25, shift = {0, 0}
+        }
+      }
+
+      double_inserter_item.icon = nil
+      double_inserter_item.order = "z" .. double_inserter_item.order
+      double_inserter_item.subgroup = "inserters_double"
 
       -- local double_inserter_arm_item = flib.copy_prototype(data.raw.item[entity_prototype.minable.result], "double_arm_" .. inserter_name)
       -- double_inserter_arm_item.order = "a[inserter]a[stack-inserter]-c[double_arm_" .. inserter_name .. "]"
       -- double_inserter_arm_item.hidden = true
 
       local double_inserter_entity = flib.copy_prototype(entity_prototype, "double_" .. inserter_name)
+      if double_inserter_entity.next_upgrade then
+        double_inserter_entity.next_upgrade = "double_" .. double_inserter_entity.next_upgrade
+      end
       double_inserter_entity.minable.result = "double_" .. inserter_name
       double_inserter_entity.place_result = "double_" .. inserter_name
       double_inserter_entity.selection_box = {{-0.5, 0}, {0.5, 0.5}}
@@ -71,9 +91,9 @@ for inserter_name, entity_prototype in pairs(existing_inserters) do
       local double_inserter_recipe = flib.copy_prototype(data.raw.recipe[inserter_name], "double_" .. inserter_name)
       double_inserter_recipe.enabled = true
       double_inserter_recipe.ingredients = {
-        { inserter_name,        2 },
-        { "copper-cable",       2 },
-        { "electronic-circuit", 4 },
+        { type="item", name=inserter_name,        amount=2 },
+        { type="item", name="copper-cable",       amount=2 },
+        { type="item", name="electronic-circuit", amount=4 },
       }
 
       data:extend({
