@@ -1,11 +1,14 @@
 {
     "name": "double-inserter",
     "version": "2.0.0",
-    "title": "Double Inserter",
+    "title": "Mult Arm Inserter",
     "author": "Orangedude27",
     "factorio_version": "2.0",
-    "description": "Don't you hate it when you run out of space for inserters when trying to be compact. Boy do i have the solution for you!",
-    "dependencies": ["flib >= 0.6.0",
-                     "? Krastorio2"],
+    "description": "Don't you hate it when you run out of space for inserters when trying to be compact. Boy do I have the solution for you!",
+    "dependencies": [
+        "base >= 2.0",
+        "flib >= 0.6.0",
+        "? Krastorio2"
+    ],
     "homepage": "https://discord.gg/CPpSVU5cmk"
 }

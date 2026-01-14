@@ -1,116 +1,170 @@
 require("init")
 
-local function oposite_direction(direction)
-    if direction == defines.direction.north then
-        return defines.direction.south
-    elseif direction == defines.direction.east then
-        return defines.direction.west
-    elseif direction == defines.direction.south then
-        return defines.direction.north
-    elseif direction == defines.direction.west then
-        return defines.direction.east
+-- Helper to determine configuration based on entity name
+local function get_inserter_config(name)
+    if string.find(name, "quad_") then
+        return { prefix = "quad_", offsets = {90, 180, 270} }
+    elseif string.find(name, "triple_") then
+        return { prefix = "triple_", offsets = {180, 270} }
+    elseif string.find(name, "double_") then
+        return { prefix = "double_", offsets = {180} }
     end
+    return nil
 end
 
-local function on_double_inserter_built(event)
-local entity = nil
+-- Explicit rotation map using defines.direction
+local rotation_map = {
+    [defines.direction.north] = {
+        [90]  = defines.direction.east,
+        [180] = defines.direction.south,
+        [270] = defines.direction.west
+    },
+    [defines.direction.east] = {
+        [90]  = defines.direction.south,
+        [180] = defines.direction.west,
+        [270] = defines.direction.north
+    },
+    [defines.direction.south] = {
+        [90]  = defines.direction.west,
+        [180] = defines.direction.north,
+        [270] = defines.direction.east
+    },
+    [defines.direction.west] = {
+        [90]  = defines.direction.north,
+        [180] = defines.direction.east,
+        [270] = defines.direction.south
+    }
+}
 
-    if event.entity and string.find(event.entity.name, "double_") then
-        entity = event.entity
-    elseif event.created_entity and string.find(event.created_entity.name, "double_") then
-        entity = event.created_entity
+local function on_double_inserter_built(event)
+    local entity = event.entity or event.created_entity
+    if not entity or not entity.valid then return end
+
+    local config = get_inserter_config(entity.name)
+    if not config then return end
+
+    if storage.BiDirInserter[entity.unit_number] then
+        log("Duplicate Inserter exists")
+        return
     end
 
-    if entity ~= nil then
-        local surface = entity.surface
-        local position = entity.position
-        local direction = entity.direction
+    local surface = entity.surface
+    local position = entity.position
+    local direction = entity.direction
+    local force = entity.force
 
-        if storage.BiDirInserter[entity.unit_number] then
-            log("Duplicate Inserter exists")
-        else
-            inserter_name = string.sub(entity.name, 8, -1)
-            -- Create double_arm entity on top of double_inserter
-            local double_arm_entity = surface.create_entity({
-                name = "double_arm_" .. inserter_name,
+    -- Extract base name: prefix_name -> prefix_arm_name
+    local base_name = string.sub(entity.name, string.len(config.prefix) + 1)
+    local arm_name = config.prefix .. "arm_" .. base_name
+
+    local arms = {}
+
+    for _, offset in ipairs(config.offsets) do
+        local arm_dir = rotation_map[direction] and rotation_map[direction][offset]
+
+        if arm_dir then
+            local arm = surface.create_entity({
+                name = arm_name,
                 position = position,
-                direction = oposite_direction(direction),
-                force = entity.force,
+                direction = arm_dir,
+                force = force,
             })
 
-            double_arm_entity.operable = true
-            double_arm_entity.minable = true
-            double_arm_entity.destructible = false
-
-            storage.BiDirInserter[entity.unit_number] = {
-                parent_inserter = entity,
-                child_arm = double_arm_entity,
-            }
-
-            storage.BiDirInserter[double_arm_entity.unit_number] = {
-                parent_inserter = entity,
-                child_arm = double_arm_entity,
-            }
+            if arm then
+                arm.operable = true
+                arm.minable = true
+                arm.destructible = false
+                table.insert(arms, arm)
+            end
         end
+    end
+
+    local data = {
+        parent = entity,
+        arms = arms
+    }
+
+    -- Store reference for parent
+    storage.BiDirInserter[entity.unit_number] = data
+
+    -- Store reference for all children
+    for _, arm in pairs(arms) do
+        storage.BiDirInserter[arm.unit_number] = data
     end
 end
 
 local function on_double_inserter_mined(event, create_ghosts)
-    if event.entity and string.find(event.entity.name, "double_") then
-        local entity = event.entity
-        local double_inserter_pair = storage.BiDirInserter[entity.unit_number]
-        
-        if double_inserter_pair then
-            if string.find(event.entity.name, "arm") then
-                if double_inserter_pair.parent_inserter and double_inserter_pair.parent_inserter.valid then
-                    if create_ghosts then
-                        double_inserter_pair.parent_inserter.destructible = true
-                        double_inserter_pair.parent_inserter.die()
-                    else
-                        double_inserter_pair.parent_inserter.destroy()
-                    end
-                end
+    local entity = event.entity
+    if not entity or not entity.valid then return end
+
+    local data = storage.BiDirInserter[entity.unit_number]
+    if not data then return end
+
+    -- Handle Parent
+    -- Support legacy data structure (parent_inserter) and new (parent)
+    local parent = data.parent or data.parent_inserter
+    if parent and parent.valid and parent ~= entity then
+        if create_ghosts then
+            parent.destructible = true
+            parent.die()
+        else
+            parent.destroy()
+        end
+    end
+
+    -- Handle Children
+    -- Support legacy data structure (child_arm) and new (arms table)
+    local arms = data.arms or (data.child_arm and {data.child_arm}) or {}
+    
+    for _, arm in pairs(arms) do
+        if arm and arm.valid and arm ~= entity then
+            if create_ghosts then
+                arm.destructible = true
+                arm.die()
             else
-                if double_inserter_pair.child_arm and double_inserter_pair.child_arm.valid then
-                    if create_ghosts then
-                        double_inserter_pair.child_arm.destructible = true
-                        double_inserter_pair.child_arm.die()
-                    else
-                        double_inserter_pair.child_arm.destroy()
-                    end
-                end
+                arm.destroy()
             end
         end
     end
+    
+    -- Cleanup storage is handled by Lua garbage collection eventually if we nil the keys,
+    -- but since we have multiple keys pointing to the same table, we rely on the fact that
+    -- the entity unit_number won't be reused immediately.
+    storage.BiDirInserter[entity.unit_number] = nil
 end
 
 local function on_double_inserter_rotated(event)
-    if event.entity and string.find(event.entity.name, "double_") then
-        local entity = event.entity
-        local double_inserter_pair = storage.BiDirInserter[entity.unit_number]
+    local entity = event.entity
+    local data = storage.BiDirInserter[entity.unit_number]
+    if not data then return end
 
-        if double_inserter_pair then
-            if string.find(event.entity.name, "arm") then
-                if entity.direction == defines.direction.north then
-                    double_inserter_pair.parent_inserter.direction = defines.direction.south
-                elseif entity.direction == defines.direction.east then
-                    double_inserter_pair.parent_inserter.direction = defines.direction.west
-                elseif entity.direction == defines.direction.south then
-                    double_inserter_pair.parent_inserter.direction = defines.direction.north
-                elseif entity.direction == defines.direction.west then
-                    double_inserter_pair.parent_inserter.direction = defines.direction.east
-                end
-            else
-                if entity.direction == defines.direction.north then
-                    double_inserter_pair.child_arm.direction = defines.direction.south
-                elseif entity.direction == defines.direction.east then
-                    double_inserter_pair.child_arm.direction = defines.direction.west
-                elseif entity.direction == defines.direction.south then
-                    double_inserter_pair.child_arm.direction = defines.direction.north
-                elseif entity.direction == defines.direction.west then
-                    double_inserter_pair.child_arm.direction = defines.direction.east
-                end
+    -- Determine rotation offset using the map
+    local rotation_offset = nil
+    local map_for_prev = rotation_map[event.previous_direction]
+    if map_for_prev then
+        for offset, dir in pairs(map_for_prev) do
+            if dir == entity.direction then
+                rotation_offset = offset
+                break
             end
+        end
+    end
+
+    if not rotation_offset then return end
+
+    -- Rotate Parent
+    local parent = data.parent or data.parent_inserter
+    if parent and parent.valid and parent ~= entity then
+        local new_dir = rotation_map[parent.direction] and rotation_map[parent.direction][rotation_offset]
+        if new_dir then parent.direction = new_dir end
+    end
+
+    -- Rotate Children
+    local arms = data.arms or (data.child_arm and {data.child_arm}) or {}
+    for _, arm in pairs(arms) do
+        if arm and arm.valid and arm ~= entity then
+            local new_dir = rotation_map[arm.direction] and rotation_map[arm.direction][rotation_offset]
+            if new_dir then arm.direction = new_dir end
         end
     end
 end
