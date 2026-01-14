@@ -1,13 +1,26 @@
 require("init")
 
+-- Configuration table for each inserter variant
+-- Each variant has a parent arm (0°) plus N additional arms at specified offsets
+-- Only 45° increments are supported: 45, 90, 135, 180, 225, 270, 315
+local inserter_configs = {
+    double_ = { offsets = {180} },                              -- 2 arms: 0°, 180°
+    triple_ = { offsets = {180, 270} },                         -- 3 arms: 0°, 180°, 270°
+    quad_   = { offsets = {90, 180, 270} },                     -- 4 arms: 0°, 90°, 180°, 270°
+    quin_   = { offsets = {45, 90, 180, 270} },                 -- 5 arms: 0°, 45°, 90°, 180°, 270°
+    sex_    = { offsets = {45, 90, 135, 180, 270} },            -- 6 arms: 0°, 45°, 90°, 135°, 180°, 270°
+    sep_    = { offsets = {45, 90, 135, 180, 225, 270} },       -- 7 arms: 0°, 45°, 90°, 135°, 180°, 225°, 270° (skip 315)
+    oct_    = { offsets = {45, 90, 135, 180, 225, 270, 315} },  -- 8 arms: 0°, 45°, 90°, 135°, 180°, 225°, 270°, 315°
+}
+
 -- Helper to determine configuration based on entity name
 local function get_inserter_config(name)
-    if string.find(name, "quad_") then
-        return { prefix = "quad_", offsets = {90, 180, 270} }
-    elseif string.find(name, "triple_") then
-        return { prefix = "triple_", offsets = {180, 270} }
-    elseif string.find(name, "double_") then
-        return { prefix = "double_", offsets = {180} }
+    -- Check longest prefixes first to avoid false matches
+    for _, prefix in ipairs({"triple_", "double_", "quin_", "quad_", "sex_", "sep_", "oct_"}) do
+        if string.find(name, prefix, 1, true) then
+            local config = inserter_configs[prefix]
+            return { prefix = prefix, offsets = config.offsets }
+        end
     end
     return nil
 end
@@ -15,24 +28,40 @@ end
 -- Explicit rotation map using defines.direction
 local rotation_map = {
     [defines.direction.north] = {
+        [45]  = defines.direction.northeast,
         [90]  = defines.direction.east,
+        [135] = defines.direction.southeast,
         [180] = defines.direction.south,
-        [270] = defines.direction.west
+        [225] = defines.direction.southwest,
+        [270] = defines.direction.west,
+        [315] = defines.direction.northwest
     },
     [defines.direction.east] = {
+        [45]  = defines.direction.southeast,
         [90]  = defines.direction.south,
+        [135] = defines.direction.southwest,
         [180] = defines.direction.west,
-        [270] = defines.direction.north
+        [225] = defines.direction.northwest,
+        [270] = defines.direction.north,
+        [315] = defines.direction.northeast
     },
     [defines.direction.south] = {
+        [45]  = defines.direction.southwest,
         [90]  = defines.direction.west,
+        [135] = defines.direction.northwest,
         [180] = defines.direction.north,
-        [270] = defines.direction.east
+        [225] = defines.direction.northeast,
+        [270] = defines.direction.east,
+        [315] = defines.direction.southeast
     },
     [defines.direction.west] = {
+        [45]  = defines.direction.northwest,
         [90]  = defines.direction.north,
+        [135] = defines.direction.northeast,
         [180] = defines.direction.east,
-        [270] = defines.direction.south
+        [225] = defines.direction.southeast,
+        [270] = defines.direction.south,
+        [315] = defines.direction.southwest
     }
 }
 
@@ -59,22 +88,49 @@ local function on_double_inserter_built(event)
 
     local arms = {}
 
-    for _, offset in ipairs(config.offsets) do
-        local arm_dir = rotation_map[direction] and rotation_map[direction][offset]
+    for i, offset in ipairs(config.offsets) do
+        local final_arm_name, arm_dir
+
+        -- Check if offset is diagonal (45, 135, 225, 315)
+        -- Inserters only support 4 cardinal directions, so diagonals need special entities
+        if offset % 90 ~= 0 then
+            -- Use the diagonal 'ne_arm_' variant which has diagonal pickup/insert vectors
+            final_arm_name = "ne_arm_" .. base_name
+            -- Map diagonal offsets to cardinal rotations for the ne_arm entity
+            -- ne_arm points NE (45°), so we rotate it in 90° steps:
+            -- 45° -> 0 (north), 135° -> 4 (east), 225° -> 8 (south), 315° -> 12 (west)
+            local diagonal_map = {
+                [45] = 0,    -- NE diagonal, point north
+                [135] = 4,   -- SE diagonal, point east
+                [225] = 8,   -- SW diagonal, point south
+                [315] = 12,  -- NW diagonal, point west
+            }
+            local base_dir = diagonal_map[offset]
+            if base_dir then
+                arm_dir = (direction + base_dir) % 16
+            end
+        else
+            -- Use standard cardinal arm with rotation map
+            final_arm_name = arm_name
+            arm_dir = rotation_map[direction] and rotation_map[direction][offset]
+        end
 
         if arm_dir then
-            local arm = surface.create_entity({
-                name = arm_name,
-                position = position,
-                direction = arm_dir,
-                force = force,
-            })
+            local success, result = pcall(function()
+                return surface.create_entity({
+                    name = final_arm_name,
+                    position = position,
+                    direction = arm_dir,
+                    force = force,
+                    create_build_effect_smoke = false,
+                })
+            end)
 
-            if arm then
-                arm.operable = true
-                arm.minable = true
-                arm.destructible = false
-                table.insert(arms, arm)
+            if success and result then
+                result.operable = true
+                result.minable = false
+                result.destructible = false
+                table.insert(arms, result)
             end
         end
     end
