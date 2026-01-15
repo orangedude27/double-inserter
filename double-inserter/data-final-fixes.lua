@@ -2,13 +2,13 @@ flib = require('__flib__.data-util')
 
 -- Define the variants and their properties
 local variants = {
-  { prefix = "double_", count = 2, icon = "__double-inserter__/graphics/icons/two.png" },
-  { prefix = "triple_", count = 3, icon = "__double-inserter__/graphics/icons/three.png" },
-  { prefix = "quad_",   count = 4, icon = "__double-inserter__/graphics/icons/four.png" },
-  { prefix = "quin_",   count = 5, icon = "__double-inserter__/graphics/icons/four.png" },
-  { prefix = "sex_",    count = 6, icon = "__double-inserter__/graphics/icons/four.png" },
-  { prefix = "sep_",    count = 7, icon = "__double-inserter__/graphics/icons/four.png" },
-  { prefix = "oct_",    count = 8, icon = "__double-inserter__/graphics/icons/four.png" },
+  { prefix = "double_", count = 2, icon = "__double-inserter__/graphics/icons/number-2.png" },
+  { prefix = "triple_", count = 3, icon = "__double-inserter__/graphics/icons/number-3.png" },
+  { prefix = "quad_",   count = 4, icon = "__double-inserter__/graphics/icons/number-4.png" },
+  { prefix = "quin_",   count = 5, icon = "__double-inserter__/graphics/icons/number-5.png" },
+  { prefix = "sex_",    count = 6, icon = "__double-inserter__/graphics/icons/number-6.png" },
+  { prefix = "sep_",    count = 7, icon = "__double-inserter__/graphics/icons/number-7.png" },
+  { prefix = "oct_",    count = 8, icon = "__double-inserter__/graphics/icons/number-8.png" },
 }
 
 -- Map recipes to technologies to find prerequisites
@@ -60,7 +60,7 @@ for inserter_name, entity_prototype in pairs(existing_inserters) do
         -- 1. Item
         local new_item = flib.copy_prototype(original_item, new_name)
         new_item.localised_name = item_localised_name
-    
+
         new_item.icons = {
           {
             icon = new_item.icon
@@ -93,11 +93,11 @@ for inserter_name, entity_prototype in pairs(existing_inserters) do
         local new_arm = flib.copy_prototype(entity_prototype, arm_name)
         new_arm.localised_name = entity_localised_name
         new_arm.icon = "__double-inserter__/graphics/icons/empty.png"
-        new_arm.rotation_speed = new_arm.rotation_speed * 0.50
+        -- Cardinal arms run at full speed (no change)
         new_arm.icon_size = 32
         new_arm.icon_mipmaps = nil
         new_arm.next_upgrade = nil
-        new_arm.minable = new_entity.minable
+        new_arm.minable = {mining_time = 0.1, result = nil}  -- Minable but drops nothing - parent handles drops
         new_arm.placeable_by = {item = new_name, count = 1}
         new_arm.flags = { "not-blueprintable", "placeable-off-grid", "player-creation"}
         -- Selection box will rotate with the inserter automatically
@@ -131,12 +131,34 @@ for inserter_name, entity_prototype in pairs(existing_inserters) do
         }
 
         -- 5. Technology
+        -- Create tech icons showing multiple inserters side by side
+        local tech_icons = {}
+        local spacing = 256 / (v.count + 1)  -- Evenly space them across the icon
+
+        for j = 1, v.count do
+          local x_offset = (j - (v.count + 1) / 2) * spacing
+          -- Add the base inserter icon
+          table.insert(tech_icons, {
+            icon = original_item.icon,
+            icon_size = original_item.icon_size,
+            scale = 0.8 / v.count,  -- Scale down so they all fit
+            shift = {x_offset / 8, 0}
+          })
+          -- Add the number overlay for each
+          table.insert(tech_icons, {
+            icon = v.icon,
+            scale = 0.2 / v.count,
+            shift = {x_offset / 8, 0}
+          })
+
+        end
+
         local new_tech = {
           type = "technology",
           name = new_tech_name,
           localised_name = item_localised_name,
           icon_size = 256, icon_mipmaps = 4,
-          icons = new_item.icons, -- Use the item icon for the tech
+          icons = tech_icons,
           effects = {
             {type = "unlock-recipe", recipe = new_name}
           },
@@ -163,11 +185,12 @@ for inserter_name, entity_prototype in pairs(existing_inserters) do
       ne_arm.localised_name = {"di-names.format", {"di-prefixes.ne"}, original_entity_locale}
 
       ne_arm.icon = "__double-inserter__/graphics/icons/empty.png"
-      ne_arm.rotation_speed = ne_arm.rotation_speed * 0.50
+      -- Diagonal arms run at half speed
+      ne_arm.rotation_speed = ne_arm.rotation_speed * 0.5
       ne_arm.icon_size = 32
       ne_arm.icon_mipmaps = nil
       ne_arm.next_upgrade = nil
-      ne_arm.minable = {mining_time = 0.1, result = nil}
+      ne_arm.minable = {mining_time = 0.1, result = nil}  -- Minable but drops nothing - parent handles drops
       ne_arm.flags = { "not-blueprintable", "placeable-off-grid", "player-creation"}
       ne_arm.collision_box = nil
       ne_arm.collision_mask = {layers={}}

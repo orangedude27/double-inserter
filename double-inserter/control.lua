@@ -128,7 +128,7 @@ local function on_double_inserter_built(event)
 
             if success and result then
                 result.operable = true
-                result.minable = false
+                result.minable = true
                 result.destructible = false
                 table.insert(arms, result)
             end
