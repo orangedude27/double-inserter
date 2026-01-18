@@ -25,7 +25,19 @@ end
 
 local existing_inserters = table.deepcopy(data.raw["inserter"])
 for inserter_name, entity_prototype in pairs(existing_inserters) do
-  if not string.find(inserter_name, "loader") and not string.find(inserter_name, "double_") and not string.find(inserter_name, "triple_") and not string.find(inserter_name, "quad_") and not string.find(inserter_name, "quin_") and not string.find(inserter_name, "sex_") and not string.find(inserter_name, "sep_") and not string.find(inserter_name, "oct_") and not string.find(inserter_name, "ne_") and not string.find(inserter_name, "se_") and not string.find(inserter_name, "sw_") and not string.find(inserter_name, "nw_") and entity_prototype.minable and entity_prototype.minable.result then
+  local function starts_with_any(s, list)
+    for _, p in ipairs(list) do
+      if s:sub(1, #p) == p then return true end
+    end
+    return false
+  end
+
+  local excluded_prefixes = {
+    "loader", "double_", "triple_", "quad_", "quin_", "sex_", "sep_", "oct_",
+    "ne_", "se_", "sw_", "nw_", "invisible-"
+  }
+
+  if not starts_with_any(inserter_name, excluded_prefixes) and entity_prototype.minable and entity_prototype.minable.result then
       local previous_tech = recipe_unlocks[inserter_name] or "logistics" -- Default to logistics if no tech found (e.g. burner)
 
       local base_tech = data.raw.technology[previous_tech]
@@ -122,6 +134,8 @@ for inserter_name, entity_prototype in pairs(existing_inserters) do
         new_arm.platform_picture = { sheet = empty_sprite }
 
         -- 4. Recipe
+        -- Debug: print which inserter is being copied
+        log("double-inserter: copying inserter prototype '" .. inserter_name .. "' -> '" .. new_name .. "'")
         local new_recipe = flib.copy_prototype(data.raw.recipe[inserter_name], new_name)
         new_recipe.enabled = false -- Enabled via technology
         new_recipe.ingredients = {
