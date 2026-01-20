@@ -34,7 +34,7 @@ for inserter_name, entity_prototype in pairs(existing_inserters) do
 
   local excluded_prefixes = {
     "loader", "double_", "triple_", "quad_", "quin_", "sex_", "sep_", "oct_",
-    "ne_", "se_", "sw_", "nw_", "invisible-"
+    "ne_", "se_", "sw_", "nw_", "invisible-", "ee-"
   }
 
   if not starts_with_any(inserter_name, excluded_prefixes) and entity_prototype.minable and entity_prototype.minable.result then
